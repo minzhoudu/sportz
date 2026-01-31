@@ -17,6 +17,35 @@ export const attachWebSocketServer = (server: Server) => {
     maxPayload: 1024 * 1024, //? 1MB
   });
 
+  server.on("upgrade", (request, socket) => {
+    if (!request.url || !request.headers.host) return;
+
+    const { pathname } = new URL(request.url, `http://${request.headers.host}`);
+    if (pathname !== "/ws") return;
+
+    void (async () => {
+      try {
+        const decision = await wsArcjet.protect(request);
+
+        if (decision.isDenied()) {
+          if (decision.reason.isRateLimit()) {
+            socket.write(`HTTP/1.1 429 Too Many Requests\r\n\r\n`);
+          } else {
+            socket.write(`HTTP/1.1 403 Forbidden\r\n\r\n`);
+          }
+
+          socket.destroy();
+          return;
+        }
+      } catch (error) {
+        console.error("WS Arcjet upgrade error", error);
+        socket.write(`HTTP/1.1 500 Internal Server Error\r\n\r\n`);
+        socket.destroy();
+        return;
+      }
+    })();
+  });
+
   const heartbeatInterval = setInterval(() => {
     for (const client of wss.clients) {
       const ws = client as ExtendedWebSocket;
@@ -35,34 +64,17 @@ export const attachWebSocketServer = (server: Server) => {
     clearInterval(heartbeatInterval);
   });
 
-  wss.on("connection", (socket, request) => {
+  wss.on("connection", (socket) => {
     const ws = socket as ExtendedWebSocket;
     ws.isAlive = true;
 
-    void (async () => {
-      try {
-        const decision = await wsArcjet.protect(request);
+    ws.on("pong", () => {
+      ws.isAlive = true;
+    });
 
-        if (decision.isDenied()) {
-          const code = decision.reason.isRateLimit() ? 1013 : 1008;
-          const reason = decision.reason.isRateLimit() ? "Rate Limit Exceeded" : "Forbidden";
-          socket.close(code, reason);
-          return;
-        }
-      } catch (error) {
-        console.error("WS Arcjet connection error", error);
-        socket.close(1011, "Server security error");
-        return;
-      }
+    sendJson(socket, { type: "welcome", message: "Welcome to the websocket server" });
 
-      ws.on("pong", () => {
-        ws.isAlive = true;
-      });
-
-      sendJson(socket, { type: "welcome", message: "Welcome to the websocket server" });
-
-      socket.on("error", console.error);
-    })();
+    socket.on("error", console.error);
   });
 
   function broadcastMatchCreated(match: Match) {
