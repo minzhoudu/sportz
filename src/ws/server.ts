@@ -8,8 +8,7 @@ interface ExtendedWebSocket extends WebSocket {
   isAlive: boolean;
 }
 
-// const HEARTBEAT_INTERVAL = 30000; //? 30 seconds
-const HEARTBEAT_INTERVAL = 5000;
+const HEARTBEAT_INTERVAL = 30000; //? 30 seconds
 
 export const attachWebSocketServer = (server: Server) => {
   const wss = new WebSocketServer({
@@ -24,7 +23,7 @@ export const attachWebSocketServer = (server: Server) => {
 
       if (!ws.isAlive) {
         ws.terminate();
-        return;
+        continue;
       }
 
       ws.isAlive = false;

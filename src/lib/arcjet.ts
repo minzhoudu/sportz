@@ -4,7 +4,7 @@ import { NextFunction, Request, Response } from "express";
 const arcjetKey = process.env.ARCJET_API_KEY;
 const arcjetMode = process.env.ARCJET_MODE === "DRY_RUN" ? "DRY_RUN" : "LIVE";
 
-if (!arcjetKey) throw new Error("ARCJET_KEY environment variable is not defined");
+if (!arcjetKey) throw new Error("ARCJET_API_KEY environment variable is not defined");
 
 export const httpArcjet = arcjet({
   key: arcjetKey,
