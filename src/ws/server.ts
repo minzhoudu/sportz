@@ -1,7 +1,15 @@
 import { Match } from "#db/schema/matches.js";
+import { wsArcjet } from "#lib/arcjet.js";
 import { broadcast, sendJson } from "#utils/websockets.js";
 import { Server } from "http";
-import { WebSocketServer } from "ws";
+import { WebSocket, WebSocketServer } from "ws";
+
+interface ExtendedWebSocket extends WebSocket {
+  isAlive: boolean;
+}
+
+// const HEARTBEAT_INTERVAL = 30000; //? 30 seconds
+const HEARTBEAT_INTERVAL = 5000;
 
 export const attachWebSocketServer = (server: Server) => {
   const wss = new WebSocketServer({
@@ -10,10 +18,52 @@ export const attachWebSocketServer = (server: Server) => {
     maxPayload: 1024 * 1024, //? 1MB
   });
 
-  wss.on("connection", (socket) => {
-    sendJson(socket, { type: "welcome", message: "Welcome to the websocket server" });
+  const heartbeatInterval = setInterval(() => {
+    for (const client of wss.clients) {
+      const ws = client as ExtendedWebSocket;
 
-    socket.on("error", console.error);
+      if (!ws.isAlive) {
+        ws.terminate();
+        return;
+      }
+
+      ws.isAlive = false;
+      ws.ping();
+    }
+  }, HEARTBEAT_INTERVAL);
+
+  wss.on("close", () => {
+    clearInterval(heartbeatInterval);
+  });
+
+  wss.on("connection", (socket, request) => {
+    void (async () => {
+      try {
+        const decision = await wsArcjet.protect(request);
+
+        if (decision.isDenied()) {
+          const code = decision.reason.isRateLimit() ? 1013 : 1008;
+          const reason = decision.reason.isRateLimit() ? "Rate Limit Exceeded" : "Forbidden";
+          socket.close(code, reason);
+          return;
+        }
+      } catch (error) {
+        console.error("WS Arcjet connection error", error);
+        socket.close(1011, "Server security error");
+        return;
+      }
+
+      const ws = socket as ExtendedWebSocket;
+      ws.isAlive = true;
+
+      ws.on("pong", () => {
+        ws.isAlive = true;
+      });
+
+      sendJson(socket, { type: "welcome", message: "Welcome to the websocket server" });
+
+      socket.on("error", console.error);
+    })();
   });
 
   function broadcastMatchCreated(match: Match) {
