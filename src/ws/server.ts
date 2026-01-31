@@ -1,5 +1,5 @@
 import { Match } from "#db/schema/matches.js";
-import { brodcast, sendJson } from "#utils/websockets.js";
+import { broadcast, sendJson } from "#utils/websockets.js";
 import { Server } from "http";
 import { WebSocketServer } from "ws";
 
@@ -16,9 +16,9 @@ export const attachWebSocketServer = (server: Server) => {
     socket.on("error", console.error);
   });
 
-  function brodcastMatchCreated(match: Match) {
-    brodcast(wss, { type: "match_created", data: match });
+  function broadcastMatchCreated(match: Match) {
+    broadcast(wss, { type: "match_created", data: match });
   }
 
-  return { brodcastMatchCreated };
+  return { broadcastMatchCreated };
 };

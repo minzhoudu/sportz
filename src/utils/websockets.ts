@@ -6,9 +6,9 @@ export const sendJson = (socket: WebSocket, payload: unknown) => {
   socket.send(JSON.stringify(payload));
 };
 
-export const brodcast = (wss: WebSocketServer, payload: unknown) => {
+export const broadcast = (wss: WebSocketServer, payload: unknown) => {
   for (const client of wss.clients) {
-    if (client.readyState !== WebSocket.OPEN) return;
+    if (client.readyState !== WebSocket.OPEN) continue;
 
     sendJson(client, payload);
   }

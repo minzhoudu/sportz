@@ -4,7 +4,8 @@ import { matchesRouter } from "#routes/matches.js";
 import express from "express";
 import { attachWebSocketServer } from "#ws/server.js";
 
-const PORT = process.env.PORT ? Number(process.env.PORT) : 3000;
+const parsedPort = Number.parseInt(process.env.PORT ?? "", 10);
+const PORT = Number.isFinite(parsedPort) ? parsedPort : 3000;
 const HOST = process.env.HOST ?? "0.0.0.0";
 
 const app = express();
@@ -18,8 +19,8 @@ app.get("/", (req, res) => {
 
 app.use("/matches", matchesRouter);
 
-const { brodcastMatchCreated } = attachWebSocketServer(server);
-app.locals.brodcastMatchCreated = brodcastMatchCreated;
+const { broadcastMatchCreated } = attachWebSocketServer(server);
+app.locals.broadcastMatchCreated = broadcastMatchCreated;
 
 server.listen(PORT, HOST, () => {
   const baseUrl = HOST === "0.0.0.0" ? `http://localhost:${PORT.toString()}` : `http://${HOST}:${PORT.toString()}`;
