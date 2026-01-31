@@ -36,6 +36,9 @@ export const attachWebSocketServer = (server: Server) => {
   });
 
   wss.on("connection", (socket, request) => {
+    const ws = socket as ExtendedWebSocket;
+    ws.isAlive = true;
+
     void (async () => {
       try {
         const decision = await wsArcjet.protect(request);
@@ -51,9 +54,6 @@ export const attachWebSocketServer = (server: Server) => {
         socket.close(1011, "Server security error");
         return;
       }
-
-      const ws = socket as ExtendedWebSocket;
-      ws.isAlive = true;
 
       ws.on("pong", () => {
         ws.isAlive = true;
