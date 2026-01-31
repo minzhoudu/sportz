@@ -1,5 +1,5 @@
 {
-  "name": "websockets",
+  "name": "sportz-api",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -12,20 +12,28 @@
     "lint:fix": "eslint --fix .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "db:generate": "tsx node_modules/drizzle-kit/bin.cjs generate",
+    "db:migrate": "tsx node_modules/drizzle-kit/bin.cjs migrate",
+    "db:studio": "tsx node_modules/drizzle-kit/bin.cjs studio"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "type": "module",
   "dependencies": {
-    "express": "^5.2.1"
+    "dotenv": "^17.2.3",
+    "drizzle-orm": "^0.45.1",
+    "express": "^5.2.1",
+    "pg": "^8.18.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.2",
     "@tsconfig/node22": "^22.0.5",
     "@types/express": "^5.0.6",
     "@types/node": "^25.1.0",
+    "@types/pg": "^8.16.0",
+    "drizzle-kit": "^0.31.8",
     "eslint": "^9.39.2",
     "eslint-plugin-perfectionist": "^5.4.0",
     "husky": "^9.1.7",
