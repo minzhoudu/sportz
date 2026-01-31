@@ -1,0 +1,1 @@
+ALTER TABLE "matches" ALTER COLUMN "end_time" SET NOT NULL;
