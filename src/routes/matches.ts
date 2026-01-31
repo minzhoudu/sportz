@@ -5,14 +5,13 @@ import { getMatchStatus } from "#utils/match-status.js";
 import { createMatchSchema, listMatchesQuerySchema } from "#validation/matches.js";
 import { desc } from "drizzle-orm";
 import { Router } from "express";
-import z from "zod";
 
 export const matchesRouter = Router();
 
 matchesRouter.get("/", async (req, res) => {
   const parsedData = listMatchesQuerySchema.safeParse(req.query);
   if (!parsedData.success) {
-    return res.status(400).json({ success: false, message: "Invalid query parameters", error: z.treeifyError(parsedData.error) });
+    return res.status(400).json({ success: false, message: "Invalid query parameters", error: parsedData.error.issues });
   }
 
   const limit = Math.min(parsedData.data.limit ?? 50, DEFAULT_MAX_LIMIT);
@@ -22,7 +21,8 @@ matchesRouter.get("/", async (req, res) => {
 
     return res.status(200).json({ success: true, data });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to list matches", error: JSON.stringify(error) });
+    console.error("Failed to list matches", error);
+    return res.status(500).json({ success: false, message: "Failed to list matches" });
   }
 });
 
@@ -30,7 +30,7 @@ matchesRouter.post("/", async (req, res) => {
   const body = createMatchSchema.safeParse(req.body);
 
   if (!body.success) {
-    return res.status(400).json({ success: false, message: "Invalid payload", error: z.treeifyError(body.error) });
+    return res.status(400).json({ success: false, message: "Invalid payload", error: body.error.issues });
   }
 
   const { startTime, endTime, homeScore, awayScore } = body.data;
@@ -48,8 +48,9 @@ matchesRouter.post("/", async (req, res) => {
       })
       .returning();
 
-    res.status(201).json({ data: event });
+    res.status(201).json({ success: true, data: event });
   } catch (error) {
-    return res.status(500).json({ success: false, message: "Failed to create match", error: JSON.stringify(error) });
+    console.error("Failed to create match", error);
+    return res.status(500).json({ success: false, message: "Failed to create match" });
   }
 });
