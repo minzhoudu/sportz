@@ -1,6 +1,6 @@
 import { Match } from "#db/schema/matches.js";
 import { wsArcjet } from "#lib/arcjet.js";
-import { broadcast, sendJson } from "#utils/websockets.js";
+import { broadcastToAll, broadcastToMatch, cleanupSubscriptions, handleMessage, sendJson } from "#utils/websockets.js";
 import { Server } from "http";
 import { WebSocket, WebSocketServer } from "ws";
 
@@ -72,14 +72,32 @@ export const attachWebSocketServer = (server: Server) => {
       ws.isAlive = true;
     });
 
+    socket.subscriptions = new Set();
+
     sendJson(socket, { type: "welcome", message: "Welcome to the websocket server" });
+
+    socket.on("message", (data) => {
+      handleMessage(socket, data);
+    });
+
+    socket.on("close", () => {
+      cleanupSubscriptions(socket);
+    });
+
+    socket.on("error", () => {
+      socket.terminate();
+    });
 
     socket.on("error", console.error);
   });
 
   function broadcastMatchCreated(match: Match) {
-    broadcast(wss, { type: "match_created", data: match });
+    broadcastToAll(wss, { type: "match_created", data: match });
   }
 
-  return { broadcastMatchCreated };
+  function broadcastCommentary(matchId: string, comment: unknown) {
+    broadcastToMatch(matchId, { type: "commentary", data: comment });
+  }
+
+  return { broadcastMatchCreated, broadcastCommentary };
 };
