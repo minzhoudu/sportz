@@ -53,6 +53,14 @@ commentaryRouter.post("/", async (req, res) => {
       .values({ matchId: id, minute, sequence, period, eventType, actor, team, message, metadata, tags })
       .returning();
 
+    if (res.app.locals.broadcastCommentary) {
+      try {
+        res.app.locals.broadcastCommentary(result.matchId.toString(), result);
+      } catch (broadcastError) {
+        console.warn("Failed to broadcast commentary", broadcastError);
+      }
+    }
+
     res.status(201).json({ success: true, data: result });
   } catch (error) {
     console.error("Failed to create commentary", error);
